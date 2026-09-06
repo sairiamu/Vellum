@@ -12,6 +12,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::file_io::read_text_file,
             commands::file_io::write_text_file,
+            commands::file_io::save_recovery_file,
+            commands::file_io::load_recovery_file,
+            commands::file_io::clear_recovery_file,
+            commands::settings::save_session,
+            commands::settings::load_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

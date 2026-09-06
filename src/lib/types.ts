@@ -27,4 +27,11 @@ export interface Tab {
   name: string;
   content: string;
   isDirty: boolean;
+  cursorPos?: number;
+  scrollPos?: number;
+}
+
+export interface SessionState {
+  tabs: Omit<Tab, 'content'>[]; // Don't store full content in session store, use recovery files or disk
+  activeTabId: string | null;
 }

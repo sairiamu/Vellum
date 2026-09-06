@@ -7,10 +7,20 @@ import { bracketMatching } from '@codemirror/language';
 interface EditorPaneProps {
   content: string;
   onChange: (newContent: string) => void;
+  onStateChange?: (cursorPos: number, scrollPos: number) => void;
+  initialCursorPos?: number;
+  initialScrollPos?: number;
   wordWrap?: boolean;
 }
 
-export const EditorPane: React.FC<EditorPaneProps> = ({ content, onChange, wordWrap = true }) => {
+export const EditorPane: React.FC<EditorPaneProps> = ({
+  content,
+  onChange,
+  onStateChange,
+  initialCursorPos = 0,
+  initialScrollPos = 0,
+  wordWrap = true
+}) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -19,6 +29,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ content, onChange, wordW
 
     const startState = EditorState.create({
       doc: content,
+      selection: { anchor: initialCursorPos },
       extensions: [
         lineNumbers(),
         highlightActiveLineGutter(),
@@ -30,6 +41,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ content, onChange, wordW
           if (update.docChanged) {
             onChange(update.state.doc.toString());
           }
+          if (update.selectionSet || update.docChanged || update.geometryChanged) {
+            const cursorPos = update.state.selection.main.head;
+            const scrollPos = update.view.scrollDOM.scrollTop;
+            onStateChange?.(cursorPos, scrollPos);
+          }
         }),
         wordWrap ? EditorView.lineWrapping : [],
       ],
@@ -39,6 +55,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ content, onChange, wordW
       state: startState,
       parent: editorRef.current,
     });
+
+    // Restore scroll position after a short delay to ensure rendering
+    setTimeout(() => {
+      view.scrollDOM.scrollTop = initialScrollPos;
+    }, 0);
 
     viewRef.current = view;
 
