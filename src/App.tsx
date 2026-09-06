@@ -217,6 +217,16 @@ function App() {
         <button onClick={createNewTab}>New</button>
         <button onClick={handleOpen}>Open</button>
         <button onClick={handleSave} disabled={!activeTab}>Save</button>
+        <button onClick={() => {
+          // A bit of a hack to trigger the search panel from outside
+          // but effective for a simple toolbar button
+          window.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'f',
+            ctrlKey: !navigator.platform.includes('Mac'),
+            metaKey: navigator.platform.includes('Mac'),
+            bubbles: true
+          }));
+        }} disabled={!activeTab}>Find</button>
       </div>
       <TabBar
         tabs={tabs}
