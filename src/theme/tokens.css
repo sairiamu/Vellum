@@ -1,0 +1,13 @@
+:root {
+  --surface-bg: #ffffff;
+  --surface-blur: 0px;
+  --surface-border: 1px solid #ccc;
+  --shadow-primary: none;
+  --shadow-secondary: none;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --text-glow-color: transparent;
+  --text-glow-intensity: 0;
+  --contrast-floor: 4.5;
+}
