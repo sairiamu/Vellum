@@ -11,6 +11,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             commands::file_io::read_text_file,
+            commands::file_io::read_text_file_stream,
             commands::file_io::write_text_file,
             commands::file_io::save_recovery_file,
             commands::file_io::load_recovery_file,

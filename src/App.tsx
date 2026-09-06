@@ -5,7 +5,7 @@ import { EditorPane, EditorStats } from './editor/EditorPane';
 import { TabBar } from './tabs/TabBar';
 import { StatusBar } from './statusbar/StatusBar';
 import { Tab } from './lib/types';
-import { apiInvoke } from './lib/tauriApi';
+import { apiInvoke, streamInvoke } from './lib/tauriApi';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useTabSession } from './tabs/useTabSession';
 
@@ -13,12 +13,15 @@ interface FileResponse {
   content: string;
   encoding: string;
   line_ending: string;
+  size?: number;
 }
 
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isLargeFile, setIsLargeFile] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [stats, setStats] = useState<EditorStats>({
     wordCount: 0,
     charCount: 0,
@@ -86,21 +89,64 @@ function App() {
       });
 
       if (selected && typeof selected === 'string') {
-        const res = await apiInvoke<FileResponse>('read_text_file', { path: selected });
-        const name = selected.split(/[\\/]/).pop() || 'Untitled';
+        const startTime = performance.now();
+        // Check size first via metadata or use a separate command
+        // For now, let's try a regular read and check size from response,
+        // OR better, we use a command that returns metadata first.
 
-        const newTab: Tab = {
-          id: crypto.randomUUID(),
-          path: selected,
-          name: name,
-          content: res.content,
-          isDirty: false,
-          encoding: res.encoding,
-          lineEnding: res.line_ending
-        };
+        // Let's use read_text_file which I just updated to include size
+        const firstRes = await apiInvoke<FileResponse>('read_text_file', { path: selected });
+        const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10MB
 
-        setTabs(prev => [...prev, newTab]);
-        setActiveTabId(newTab.id);
+        if (firstRes.size && firstRes.size > LARGE_FILE_THRESHOLD) {
+          setIsLargeFile(true);
+          let fullContent = "";
+          let currentSize = 0;
+
+          streamInvoke('read_text_file_stream', { path: selected }, (event) => {
+            if (event.type === 'Chunk') {
+              fullContent += event.payload;
+              currentSize += event.payload.length;
+              setLoadProgress(Math.min(99, Math.round((currentSize / (firstRes.size || 1)) * 100)));
+            } else if (event.type === 'Complete') {
+              const name = selected.split(/[\\/]/).pop() || 'Untitled';
+              const newTab: Tab = {
+                id: crypto.randomUUID(),
+                path: selected,
+                name: name,
+                content: fullContent,
+                isDirty: false,
+                encoding: event.payload.encoding,
+                lineEnding: event.payload.line_ending,
+                isLargeMode: true
+              };
+              setTabs(prev => [...prev, newTab]);
+              setActiveTabId(newTab.id);
+              setIsLargeFile(false);
+              setLoadProgress(0);
+              const endTime = performance.now();
+              console.log(`Large file opened in ${endTime - startTime}ms`);
+            } else if (event.type === 'Error') {
+              console.error('Stream error:', event.payload);
+              setIsLargeFile(false);
+            }
+          });
+        } else {
+          const name = selected.split(/[\\/]/).pop() || 'Untitled';
+          const newTab: Tab = {
+            id: crypto.randomUUID(),
+            path: selected,
+            name: name,
+            content: firstRes.content,
+            isDirty: false,
+            encoding: firstRes.encoding,
+            lineEnding: firstRes.line_ending
+          };
+          setTabs(prev => [...prev, newTab]);
+          setActiveTabId(newTab.id);
+          const endTime = performance.now();
+          console.log(`File opened in ${endTime - startTime}ms`);
+        }
       }
     } catch (error) {
       console.error('Failed to open file:', error);
@@ -161,6 +207,12 @@ function App() {
 
   return (
     <div className="app-container">
+      {isLargeFile && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Loading large file... {loadProgress}%</p>
+        </div>
+      )}
       <div className="toolbar">
         <button onClick={createNewTab}>New</button>
         <button onClick={handleOpen}>Open</button>
@@ -197,6 +249,7 @@ function App() {
           {...stats}
           encoding={activeTab.encoding}
           lineEnding={activeTab.lineEnding}
+          isLargeFile={activeTab.isLargeMode}
           onEncodingChange={handleEncodingChange}
           onLineEndingChange={handleLineEndingChange}
         />

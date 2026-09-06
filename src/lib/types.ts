@@ -31,6 +31,7 @@ export interface Tab {
   scrollPos?: number;
   encoding: string;
   lineEnding: string;
+  isLargeMode?: boolean;
 }
 
 export interface SessionState {

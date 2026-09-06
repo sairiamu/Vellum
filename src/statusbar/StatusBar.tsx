@@ -7,6 +7,7 @@ interface StatusBarProps {
   cursorPos: { line: number; col: number };
   encoding: string;
   lineEnding: string;
+  isLargeFile?: boolean;
   onEncodingChange: (encoding: string) => void;
   onLineEndingChange: (lineEnding: string) => void;
 }
@@ -18,12 +19,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   cursorPos,
   encoding,
   lineEnding,
+  isLargeFile,
   onEncodingChange,
   onLineEndingChange,
 }) => {
   return (
     <div className="status-bar">
       <div className="status-left">
+        {isLargeFile && <span className="large-file-badge">LARGE FILE MODE</span>}
         <span>Words: {wordCount}</span>
         <span>Chars: {charCount}</span>
         <span>Lines: {lineCount}</span>
