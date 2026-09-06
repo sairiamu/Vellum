@@ -4,10 +4,17 @@ import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLi
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching } from '@codemirror/language';
 
+export interface EditorStats {
+  wordCount: number;
+  charCount: number;
+  lineCount: number;
+  cursorPos: { line: number; col: number };
+}
+
 interface EditorPaneProps {
   content: string;
   onChange: (newContent: string) => void;
-  onStateChange?: (cursorPos: number, scrollPos: number) => void;
+  onStateChange?: (cursorPos: number, scrollPos: number, stats: EditorStats) => void;
   initialCursorPos?: number;
   initialScrollPos?: number;
   wordWrap?: boolean;
@@ -23,6 +30,36 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+
+  const getStats = (state: EditorState): EditorStats => {
+    const doc = state.doc;
+    const charCount = doc.length;
+    const lineCount = doc.lines;
+
+    // Word count - iterate through chunks to be memory efficient for large files
+    let wordCount = 0;
+    const iter = doc.iter();
+    while (!iter.done) {
+      const chunk = iter.next().value;
+      if (chunk) {
+        const matches = chunk.match(/\b\w+\b/g);
+        if (matches) {
+          wordCount += matches.length;
+        }
+      }
+    }
+
+    const selection = state.selection.main;
+    const line = doc.lineAt(selection.head);
+    const cursorPos = {
+      line: line.number,
+      col: selection.head - line.from + 1
+    };
+
+    return { wordCount, charCount, lineCount, cursorPos };
+  };
+
+  const statsTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -41,10 +78,16 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
           if (update.docChanged) {
             onChange(update.state.doc.toString());
           }
+
           if (update.selectionSet || update.docChanged || update.geometryChanged) {
-            const cursorPos = update.state.selection.main.head;
-            const scrollPos = update.view.scrollDOM.scrollTop;
-            onStateChange?.(cursorPos, scrollPos);
+            if (statsTimeoutRef.current) window.clearTimeout(statsTimeoutRef.current);
+
+            statsTimeoutRef.current = window.setTimeout(() => {
+              const cursorPos = update.state.selection.main.head;
+              const scrollPos = update.view.scrollDOM.scrollTop;
+              const stats = getStats(update.state);
+              onStateChange?.(cursorPos, scrollPos, stats);
+            }, 100);
           }
         }),
         wordWrap ? EditorView.lineWrapping : [],

@@ -1,23 +1,36 @@
 import { useState, useCallback, useEffect } from 'react';
 import './App.css';
 import './theme/tokens.css';
-import { EditorPane } from './editor/EditorPane';
+import { EditorPane, EditorStats } from './editor/EditorPane';
 import { TabBar } from './tabs/TabBar';
+import { StatusBar } from './statusbar/StatusBar';
 import { Tab } from './lib/types';
 import { apiInvoke } from './lib/tauriApi';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useTabSession } from './tabs/useTabSession';
 
+interface FileResponse {
+  content: string;
+  encoding: string;
+  line_ending: string;
+}
+
 function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [stats, setStats] = useState<EditorStats>({
+    wordCount: 0,
+    charCount: 0,
+    lineCount: 0,
+    cursorPos: { line: 1, col: 1 }
+  });
 
   const { loadSession, triggerAutosave } = useTabSession(tabs, activeTabId, setTabs, setActiveTabId);
 
   useEffect(() => {
     loadSession().then(() => setIsLoaded(true));
-  }, []); // Only on mount
+  }, []);
 
   const activeTab = tabs.find(t => t.id === activeTabId);
 
@@ -26,7 +39,9 @@ function App() {
       id: crypto.randomUUID(),
       name: 'Untitled',
       content: '',
-      isDirty: false
+      isDirty: false,
+      encoding: 'UTF-8',
+      lineEnding: 'LF'
     };
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(newTab.id);
@@ -44,8 +59,6 @@ function App() {
       }
       return newTabs;
     });
-
-    // Clear recovery file when tab is closed
     await apiInvoke('clear_recovery_file', { id: tabId });
   };
 
@@ -57,8 +70,9 @@ function App() {
     triggerAutosave(activeTabId, newContent);
   };
 
-  const handleEditorStateChange = (cursorPos: number, scrollPos: number) => {
+  const handleEditorStateChange = (cursorPos: number, scrollPos: number, newStats: EditorStats) => {
     if (!activeTabId) return;
+    setStats(newStats);
     setTabs(prev => prev.map(t =>
       t.id === activeTabId ? { ...t, cursorPos, scrollPos } : t
     ));
@@ -72,15 +86,17 @@ function App() {
       });
 
       if (selected && typeof selected === 'string') {
-        const content = await apiInvoke<string>('read_text_file', { path: selected });
+        const res = await apiInvoke<FileResponse>('read_text_file', { path: selected });
         const name = selected.split(/[\\/]/).pop() || 'Untitled';
 
         const newTab: Tab = {
           id: crypto.randomUUID(),
           path: selected,
           name: name,
-          content: content,
-          isDirty: false
+          content: res.content,
+          isDirty: false,
+          encoding: res.encoding,
+          lineEnding: res.line_ending
         };
 
         setTabs(prev => [...prev, newTab]);
@@ -104,17 +120,35 @@ function App() {
       }
 
       if (path) {
-        await apiInvoke('write_text_file', { path, content: activeTab.content });
+        await apiInvoke('write_text_file', {
+          path,
+          content: activeTab.content,
+          encoding: activeTab.encoding,
+          lineEnding: activeTab.lineEnding
+        });
         const name = path.split(/[\\/]/).pop() || 'Untitled';
         setTabs(prev => prev.map(t =>
           t.id === activeTab.id ? { ...t, path, name, isDirty: false } : t
         ));
-        // Clear recovery file after a successful save
         await apiInvoke('clear_recovery_file', { id: activeTab.id });
       }
     } catch (error) {
       console.error('Failed to save file:', error);
     }
+  };
+
+  const handleEncodingChange = (newEncoding: string) => {
+    if (!activeTabId) return;
+    setTabs(prev => prev.map(t =>
+      t.id === activeTabId ? { ...t, encoding: newEncoding, isDirty: true } : t
+    ));
+  };
+
+  const handleLineEndingChange = (newLineEnding: string) => {
+    if (!activeTabId) return;
+    setTabs(prev => prev.map(t =>
+      t.id === activeTabId ? { ...t, lineEnding: newLineEnding, isDirty: true } : t
+    ));
   };
 
   if (!isLoaded) {
@@ -158,6 +192,15 @@ function App() {
           </div>
         )}
       </main>
+      {activeTab && (
+        <StatusBar
+          {...stats}
+          encoding={activeTab.encoding}
+          lineEnding={activeTab.lineEnding}
+          onEncodingChange={handleEncodingChange}
+          onLineEndingChange={handleLineEndingChange}
+        />
+      )}
     </div>
   );
 }

@@ -5,6 +5,12 @@ import { ask } from '@tauri-apps/plugin-dialog';
 
 const AUTOSAVE_DEBOUNCE = 2000;
 
+interface FileResponse {
+  content: string;
+  encoding: string;
+  line_ending: string;
+}
+
 export const useTabSession = (
   tabs: Tab[],
   activeTabId: string | null,
@@ -15,8 +21,8 @@ export const useTabSession = (
 
   const saveSession = useCallback(async () => {
     const session: SessionState = {
-      tabs: tabs.map(({ id, path, name, isDirty, cursorPos, scrollPos }) => ({
-        id, path, name, isDirty, cursorPos, scrollPos
+      tabs: tabs.map(({ id, path, name, isDirty, cursorPos, scrollPos, encoding, lineEnding }) => ({
+        id, path, name, isDirty, cursorPos, scrollPos, encoding, lineEnding
       })),
       activeTabId
     };
@@ -60,7 +66,8 @@ export const useTabSession = (
           let diskContent = '';
           if (t.path) {
             try {
-              diskContent = await apiInvoke<string>('read_text_file', { path: t.path });
+              const res = await apiInvoke<FileResponse>('read_text_file', { path: t.path, encoding_override: t.encoding });
+              diskContent = res.content;
             } catch {
               // File might have been moved or deleted
             }
@@ -91,7 +98,13 @@ export const useTabSession = (
             content = diskContent;
           }
 
-          return { ...t, content, isDirty };
+          return {
+            ...t,
+            content,
+            isDirty,
+            encoding: t.encoding || 'UTF-8',
+            lineEnding: t.lineEnding || 'LF'
+          };
         }));
 
         setTabs(loadedTabs);
