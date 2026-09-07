@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tab } from '../lib/types';
+import { X, Plus } from 'lucide-react';
 
 interface TabBarProps {
   tabs: Tab[];
@@ -20,20 +21,23 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onTabClick, o
             onClick={() => onTabClick(tab.id)}
           >
             <span className="tab-name">{tab.name}</span>
-            {tab.isDirty && <span className="dirty-indicator">●</span>}
+            {tab.isDirty && <span className="dirty-indicator"></span>}
             <button
               className="tab-close"
               onClick={(e) => {
                 e.stopPropagation();
                 onTabClose(tab.id);
               }}
+              title="Close Tab"
             >
-              ×
+              <X size={14} />
             </button>
           </div>
         ))}
       </div>
-      <button className="new-tab-btn" onClick={onNewTab}>+</button>
+      <button className="new-tab-btn" onClick={onNewTab} title="New Tab">
+        <Plus size={18} />
+      </button>
     </div>
   );
 };

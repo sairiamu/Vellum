@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TreeNode as TreeNodeType } from '../lib/types';
+import { ChevronRight, ChevronDown, Folder, FileText } from 'lucide-react';
 
 interface TreeNodeProps {
   node: TreeNodeType;
@@ -27,7 +28,13 @@ export const TreeNode: React.FC<TreeNodeProps> = ({ node, onFileClick, level = 0
         style={{ paddingLeft: `${level * 12 + 8}px` }}
         onClick={handleToggle}
       >
-        <span className="node-icon">{isDirectory ? (isOpen ? '▾' : '▸') : ''}</span>
+        <span className="node-icon">
+          {isDirectory ? (
+            isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+          ) : (
+            <FileText size={14} />
+          )}
+        </span>
         <span className="node-name">{node.name}</span>
       </div>
       {isDirectory && isOpen && node.children && (

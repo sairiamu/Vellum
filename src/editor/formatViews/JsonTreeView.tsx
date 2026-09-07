@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 
 interface JsonNodeProps {
   data: any;
@@ -26,7 +27,7 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, label, depth = 0 }) => {
       <div className="json-line" onClick={isObject ? toggle : undefined}>
         {isObject && (
           <span className={`json-toggle ${isCollapsed ? 'collapsed' : ''}`}>
-            {isCollapsed ? '▶' : '▼'}
+            {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
           </span>
         )}
         {label && <span className="json-label">{label}: </span>}

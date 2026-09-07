@@ -8,6 +8,15 @@ import { Tab, TreeNode } from './lib/types';
 import { apiInvoke, streamInvoke } from './lib/tauriApi';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useTabSession } from './tabs/useTabSession';
+import {
+  FilePlus,
+  FolderOpen,
+  Save,
+  Highlighter,
+  Search,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 import { FileTree } from './explorer/FileTree';
 import { useFileWatcher } from './explorer/useFileWatcher';
@@ -420,16 +429,30 @@ function App() {
           </div>
         )}
         <div className="toolbar">
-          <button onClick={createNewTab}>New</button>
-          <button onClick={handleOpen}>Open</button>
-          <button onClick={handleSave} disabled={!activeTab}>Save</button>
-          <button onClick={() => setShowKeywordManager(true)}>Keywords</button>
+          <button onClick={createNewTab} title="New File (Ctrl+N)">
+            <FilePlus size={16} />
+            <span>New</span>
+          </button>
+          <button onClick={handleOpen} title="Open File (Ctrl+O)">
+            <FolderOpen size={16} />
+            <span>Open</span>
+          </button>
+          <button onClick={handleSave} disabled={!activeTab} title="Save File (Ctrl+S)">
+            <Save size={16} />
+            <span>Save</span>
+          </button>
+          <button onClick={() => setShowKeywordManager(true)} title="Keyword Highlighting">
+            <Highlighter size={16} />
+            <span>Keywords</span>
+          </button>
           {formatType && (
             <button
               className={`format-toggle-btn ${activeTab?.viewMode === 'formatted' ? 'active' : ''}`}
               onClick={handleToggleViewMode}
+              title={activeTab?.viewMode === 'formatted' ? 'Show Raw' : 'Show Formatted'}
             >
-              {activeTab?.viewMode === 'formatted' ? 'Raw' : 'Formatted'}
+              {activeTab?.viewMode === 'formatted' ? <EyeOff size={16} /> : <Eye size={16} />}
+              <span>{activeTab?.viewMode === 'formatted' ? 'Raw' : 'Formatted'}</span>
             </button>
           )}
           <button onClick={() => {
@@ -439,7 +462,10 @@ function App() {
               metaKey: navigator.platform.includes('Mac'),
               bubbles: true
             }));
-          }} disabled={!activeTab}>Find</button>
+          }} disabled={!activeTab} title="Find (Ctrl+F)">
+            <Search size={16} />
+            <span>Find</span>
+          </button>
         </div>
         <TabBar
           tabs={tabs}
@@ -465,9 +491,18 @@ function App() {
           ) : (
             <div className="empty-state">
               <p>Vellum</p>
-              <button onClick={createNewTab}>Create new file</button>
-              <button onClick={handleOpen}>Open existing file</button>
-              <button onClick={handleOpenFolder}>Open Folder</button>
+              <button onClick={createNewTab}>
+                <FilePlus size={18} />
+                <span>Create new file</span>
+              </button>
+              <button onClick={handleOpen}>
+                <FolderOpen size={18} />
+                <span>Open existing file</span>
+              </button>
+              <button onClick={handleOpenFolder}>
+                <FolderOpen size={18} />
+                <span>Open Folder</span>
+              </button>
             </div>
           )}
         </main>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Search } from 'lucide-react';
 
 export interface Command {
   id: string;
@@ -62,6 +63,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ commands, onClos
     <div className="command-palette-overlay" onClick={onClose}>
       <div className="command-palette-modal" onClick={e => e.stopPropagation()}>
         <div className="command-palette-input">
+          <Search size={18} className="search-icon" />
           <input
             ref={inputRef}
             type="text"
