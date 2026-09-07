@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme, ThemeType } from '../theme/ThemeProvider';
 
 interface StatusBarProps {
   wordCount: number;
@@ -23,6 +24,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   onEncodingChange,
   onLineEndingChange,
 }) => {
+  const { theme, setTheme, glowIntensity, setGlowIntensity } = useTheme();
+
   return (
     <div className="status-bar">
       <div className="status-left">
@@ -33,6 +36,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
       </div>
       <div className="status-right">
+        {theme === 'pure-glass' && (
+          <div className="glow-control">
+            <label>Glow</label>
+            <input
+              type="range"
+              min="0"
+              max="20"
+              value={glowIntensity}
+              onChange={(e) => setGlowIntensity(parseInt(e.target.value))}
+            />
+          </div>
+        )}
+        <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeType)}>
+          <option value="glass">Glass</option>
+          <option value="clay">Clay</option>
+          <option value="skeuo">Skeuomorphic</option>
+          <option value="pure-glass">Pure Glass</option>
+        </select>
         <select value={encoding} onChange={(e) => onEncodingChange(e.target.value)}>
           <option value="UTF-8">UTF-8</option>
           <option value="UTF-16LE">UTF-16LE</option>

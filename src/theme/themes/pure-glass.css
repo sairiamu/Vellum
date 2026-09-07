@@ -1,1 +1,93 @@
-/* Pure Glass Theme */
+.theme-pure-glass {
+  --surface-bg: rgba(0, 0, 0, 0.25); /* Safe minimum backing opacity */
+  --surface-blur: 40px;
+  --surface-border: none;
+  --shadow-primary: none;
+  --shadow-secondary: none;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --text-primary: #ffffff;
+  --text-glow-color: #ffffff;
+  --contrast-floor: 0.25;
+}
+
+.theme-pure-glass {
+  background-color: transparent !important;
+  color: var(--text-primary);
+}
+
+.theme-pure-glass .cm-content,
+.theme-pure-glass .cm-line,
+.theme-pure-glass .tab-name,
+.theme-pure-glass .status-bar span,
+.theme-pure-glass .explorer-header span,
+.theme-pure-glass .explorer-content div,
+.theme-pure-glass .cm-gutters,
+.theme-pure-glass button,
+.theme-pure-glass .empty-state p,
+.theme-pure-glass .node-name {
+  text-shadow: 0 0 calc(var(--text-glow-intensity) * 1px) var(--text-glow-color),
+               0 0 calc(var(--text-glow-intensity) * 0.5px) var(--text-glow-color),
+               0 0 2px rgba(0, 0, 0, 0.8); /* Stronger anti-halo for desktop backgrounds */
+}
+
+/* Enforce contrast floor: ensures text remains legible over desktop wallpaper.
+   The opacity scales slightly with glow to maintain contrast. */
+.theme-pure-glass .app-container {
+    background: linear-gradient(
+        rgba(0, 0, 0, calc(var(--contrast-floor) + (var(--text-glow-intensity) * 0.005))),
+        rgba(0, 0, 0, calc(var(--contrast-floor) + (var(--text-glow-intensity) * 0.005)))
+    ) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(var(--surface-blur)) saturate(160%);
+}
+
+/* Override editor colors for pure glass */
+.theme-pure-glass .cm-editor {
+    color: var(--text-primary) !important;
+}
+
+.theme-pure-glass .cm-gutters {
+    background-color: transparent !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.theme-pure-glass .cm-activeLine {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.theme-pure-glass .file-explorer,
+.theme-pure-glass .toolbar,
+.theme-pure-glass .tab-bar,
+.theme-pure-glass .status-bar,
+.theme-pure-glass .empty-state {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+.theme-pure-glass .tab {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.theme-pure-glass .tab.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.theme-pure-glass .tree-node:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-pure-glass button {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-pure-glass button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

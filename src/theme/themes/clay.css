@@ -1,1 +1,18 @@
-/* Clay Theme */
+.theme-clay {
+  --surface-bg: #f0f2f5;
+  --surface-blur: 0px;
+  --surface-border: none;
+  --shadow-primary: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+  --shadow-secondary: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 35px;
+  --text-glow-color: transparent;
+  --text-glow-intensity: 0;
+  --contrast-floor: 4.5;
+}
+
+.theme-clay {
+  background-color: var(--surface-bg);
+  box-shadow: var(--shadow-primary);
+}

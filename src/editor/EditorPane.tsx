@@ -65,9 +65,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   useEffect(() => {
     if (!editorRef.current) return;
 
+    const safeCursorPos = Math.min(initialCursorPos, content.length);
+
     const startState = EditorState.create({
       doc: content,
-      selection: { anchor: initialCursorPos },
+      selection: { anchor: safeCursorPos },
       extensions: [
         lineNumbers(),
         highlightActiveLineGutter(),

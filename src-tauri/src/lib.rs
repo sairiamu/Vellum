@@ -5,6 +5,7 @@ pub mod state;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
@@ -16,8 +17,14 @@ pub fn run() {
             commands::file_io::save_recovery_file,
             commands::file_io::load_recovery_file,
             commands::file_io::clear_recovery_file,
+            commands::file_tree::get_directory_tree,
+            commands::file_tree::reveal_in_explorer,
+            commands::file_tree::delete_file,
+            commands::file_tree::rename_file,
             commands::settings::save_session,
             commands::settings::load_session,
+            commands::settings::save_settings,
+            commands::settings::load_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

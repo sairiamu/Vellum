@@ -1,1 +1,21 @@
-/* Glass Theme */
+.theme-glass {
+  --surface-bg: rgba(255, 255, 255, 0.65);
+  --surface-blur: 20px;
+  --surface-border: 1px solid rgba(255, 255, 255, 0.4);
+  --shadow-primary: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  --shadow-secondary: none;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --text-glow-color: rgba(255, 255, 255, 0.5);
+  --text-glow-intensity: 0;
+  --contrast-floor: 4.5;
+}
+
+/* Enforcing contrast floor for glass: ensure background isn't too transparent */
+@supports (backdrop-filter: blur(0px)) {
+  .theme-glass {
+    background-color: var(--surface-bg);
+    backdrop-filter: blur(var(--surface-blur));
+  }
+}

@@ -7,8 +7,29 @@
     <title>Tauri + React + Typescript</title>
   </head>
 
-  <body>
-    <div id="root"></div>
+  <body style="background-color: transparent; color: white;">
+    <script>
+      console.log("HTML Body script executing...");
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log("DOM Content Loaded");
+      });
+    </script>
+    <div id="root">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #1a1a1a;">
+        <h2 style="color: #646cff;">Vellum Bootloader</h2>
+        <p id="boot-status">Initializing WebView...</p>
+        <noscript><h2>Javascript is disabled. This app requires JS.</h2></noscript>
+        <script>
+          console.log("Status script executing...");
+          setTimeout(() => {
+            const status = document.getElementById('boot-status');
+            if (status && status.innerText === 'Initializing WebView...') {
+              status.innerHTML = '<span style="color: #ffaa00;">Waiting for React to mount...</span><br><small style="color: #888;">If this stays, check DevTools (Ctrl+Shift+I)</small>';
+            }
+          }, 2000);
+        </script>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

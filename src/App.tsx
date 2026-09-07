@@ -4,10 +4,14 @@ import './theme/tokens.css';
 import { EditorPane, EditorStats } from './editor/EditorPane';
 import { TabBar } from './tabs/TabBar';
 import { StatusBar } from './statusbar/StatusBar';
-import { Tab } from './lib/types';
+import { Tab, TreeNode } from './lib/types';
 import { apiInvoke, streamInvoke } from './lib/tauriApi';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { useTabSession } from './tabs/useTabSession';
+
+import { FileTree } from './explorer/FileTree';
+
+import { useFileWatcher } from './explorer/useFileWatcher';
 
 interface FileResponse {
   content: string;
@@ -22,6 +26,9 @@ function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLargeFile, setIsLargeFile] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [explorerTree, setExplorerTree] = useState<TreeNode | null>(null);
+  const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null);
+  const [showAllFiles, setShowAllFiles] = useState(false);
   const [stats, setStats] = useState<EditorStats>({
     wordCount: 0,
     charCount: 0,
@@ -32,8 +39,16 @@ function App() {
   const { loadSession, triggerAutosave } = useTabSession(tabs, activeTabId, setTabs, setActiveTabId);
 
   useEffect(() => {
-    loadSession().then(() => setIsLoaded(true));
-  }, []);
+    // Safety timeout to ensure app renders even if session loading hangs
+    const timeout = setTimeout(() => {
+      setIsLoaded(true);
+    }, 2000);
+
+    loadSession().finally(() => {
+      clearTimeout(timeout);
+      setIsLoaded(true);
+    });
+  }, [loadSession]);
 
   const activeTab = tabs.find(t => t.id === activeTabId);
 
@@ -197,6 +212,68 @@ function App() {
     ));
   };
 
+  const handleOpenFolder = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+      });
+
+      if (selected && typeof selected === 'string') {
+        setCurrentFolderPath(selected);
+        const tree = await apiInvoke<TreeNode>('get_directory_tree', { path: selected, showAll: showAllFiles });
+        setExplorerTree(tree);
+      }
+    } catch (error) {
+      console.error('Failed to open folder:', error);
+    }
+  };
+
+  const handleToggleShowAll = async () => {
+    const newVal = !showAllFiles;
+    setShowAllFiles(newVal);
+    if (currentFolderPath) {
+      const tree = await apiInvoke<TreeNode>('get_directory_tree', { path: currentFolderPath, showAll: newVal });
+      setExplorerTree(tree);
+    }
+  };
+
+  const handleFileClick = async (path: string) => {
+    const existingTab = tabs.find(t => t.path === path);
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+      return;
+    }
+
+    // Open new file logic (simplified for tree)
+    try {
+      const res = await apiInvoke<FileResponse>('read_text_file', { path });
+      const name = path.split(/[\\/]/).pop() || 'Untitled';
+      const newTab: Tab = {
+        id: crypto.randomUUID(),
+        path,
+        name,
+        content: res.content,
+        isDirty: false,
+        encoding: res.encoding,
+        lineEnding: res.line_ending
+      };
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+    } catch (error) {
+      console.error('Failed to open file from tree:', error);
+    }
+  };
+
+  const handleRefreshTree = useCallback(async () => {
+    if (currentFolderPath) {
+      const tree = await apiInvoke<TreeNode>('get_directory_tree', { path: currentFolderPath, showAll: showAllFiles });
+      setExplorerTree(tree);
+    }
+  }, [currentFolderPath, showAllFiles]);
+
+  useFileWatcher(currentFolderPath, handleRefreshTree);
+
   if (!isLoaded) {
     return (
       <div className="empty-state">
@@ -207,63 +284,71 @@ function App() {
 
   return (
     <div className="app-container">
-      {isLargeFile && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <p>Loading large file... {loadProgress}%</p>
-        </div>
-      )}
-      <div className="toolbar">
-        <button onClick={createNewTab}>New</button>
-        <button onClick={handleOpen}>Open</button>
-        <button onClick={handleSave} disabled={!activeTab}>Save</button>
-        <button onClick={() => {
-          // A bit of a hack to trigger the search panel from outside
-          // but effective for a simple toolbar button
-          window.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'f',
-            ctrlKey: !navigator.platform.includes('Mac'),
-            metaKey: navigator.platform.includes('Mac'),
-            bubbles: true
-          }));
-        }} disabled={!activeTab}>Find</button>
-      </div>
-      <TabBar
-        tabs={tabs}
-        activeTabId={activeTabId}
-        onTabClick={handleTabClick}
-        onTabClose={handleTabClose}
-        onNewTab={createNewTab}
+      <FileTree
+        tree={explorerTree}
+        onFileClick={handleFileClick}
+        showAll={showAllFiles}
+        onToggleShowAll={handleToggleShowAll}
+        onOpenFolder={handleOpenFolder}
       />
-      <main className="editor-container">
-        {activeTab ? (
-          <EditorPane
-            key={activeTab.id}
-            content={activeTab.content}
-            onChange={handleContentChange}
-            onStateChange={handleEditorStateChange}
-            initialCursorPos={activeTab.cursorPos}
-            initialScrollPos={activeTab.scrollPos}
-            wordWrap={true}
-          />
-        ) : (
-          <div className="empty-state">
-            <p>Vellum</p>
-            <button onClick={createNewTab}>Create new file</button>
-            <button onClick={handleOpen}>Open existing file</button>
+      <div className="main-view">
+        {isLargeFile && (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <p>Loading large file... {loadProgress}%</p>
           </div>
         )}
-      </main>
-      {activeTab && (
-        <StatusBar
-          {...stats}
-          encoding={activeTab.encoding}
-          lineEnding={activeTab.lineEnding}
-          isLargeFile={activeTab.isLargeMode}
-          onEncodingChange={handleEncodingChange}
-          onLineEndingChange={handleLineEndingChange}
+        <div className="toolbar">
+          <button onClick={createNewTab}>New</button>
+          <button onClick={handleOpen}>Open</button>
+          <button onClick={handleSave} disabled={!activeTab}>Save</button>
+          <button onClick={() => {
+            window.dispatchEvent(new KeyboardEvent('keydown', {
+              key: 'f',
+              ctrlKey: !navigator.platform.includes('Mac'),
+              metaKey: navigator.platform.includes('Mac'),
+              bubbles: true
+            }));
+          }} disabled={!activeTab}>Find</button>
+        </div>
+        <TabBar
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onTabClick={handleTabClick}
+          onTabClose={handleTabClose}
+          onNewTab={createNewTab}
         />
-      )}
+        <main className="editor-container">
+          {activeTab ? (
+            <EditorPane
+              key={activeTab.id}
+              content={activeTab.content}
+              onChange={handleContentChange}
+              onStateChange={handleEditorStateChange}
+              initialCursorPos={activeTab.cursorPos}
+              initialScrollPos={activeTab.scrollPos}
+              wordWrap={true}
+            />
+          ) : (
+            <div className="empty-state">
+              <p>Vellum</p>
+              <button onClick={createNewTab}>Create new file</button>
+              <button onClick={handleOpen}>Open existing file</button>
+              <button onClick={handleOpenFolder}>Open Folder</button>
+            </div>
+          )}
+        </main>
+        {activeTab && (
+          <StatusBar
+            {...stats}
+            encoding={activeTab.encoding}
+            lineEnding={activeTab.lineEnding}
+            isLargeFile={activeTab.isLargeMode}
+            onEncodingChange={handleEncodingChange}
+            onLineEndingChange={handleLineEndingChange}
+          />
+        )}
+      </div>
     </div>
   );
 }
