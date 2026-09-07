@@ -1,9 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching } from '@codemirror/language';
 import { search, searchKeymap } from '@codemirror/search';
+import { keywordHighlight, keywordCategoriesFacet } from './extensions/keywordHighlight';
+import { KeywordCategory } from '../lib/types';
+
+const keywordCompartment = new Compartment();
 
 export interface EditorStats {
   wordCount: number;
@@ -19,6 +23,7 @@ interface EditorPaneProps {
   initialCursorPos?: number;
   initialScrollPos?: number;
   wordWrap?: boolean;
+  categories?: KeywordCategory[];
 }
 
 export const EditorPane: React.FC<EditorPaneProps> = ({
@@ -27,7 +32,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
   onStateChange,
   initialCursorPos = 0,
   initialScrollPos = 0,
-  wordWrap = true
+  wordWrap = true,
+  categories = []
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -78,6 +84,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         bracketMatching(),
         search({ top: true }), // Minimal search at the top
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+        keywordCompartment.of(keywordCategoriesFacet.of(categories)),
+        keywordHighlight(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChange(update.state.doc.toString());
@@ -123,6 +131,15 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
       });
     }
   }, [content]);
+
+  // Handle keyword categories updates
+  useEffect(() => {
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: keywordCompartment.reconfigure(keywordCategoriesFacet.of(categories))
+      });
+    }
+  }, [categories]);
 
   return <div ref={editorRef} className="editor-pane" style={{ height: '100%', width: '100%' }} />;
 };

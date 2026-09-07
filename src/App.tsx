@@ -12,6 +12,8 @@ import { useTabSession } from './tabs/useTabSession';
 import { FileTree } from './explorer/FileTree';
 
 import { useFileWatcher } from './explorer/useFileWatcher';
+import { KeywordManager } from './keywords/KeywordManager';
+import { useKeywords } from './keywords/useKeywords';
 
 interface FileResponse {
   content: string;
@@ -29,6 +31,7 @@ function App() {
   const [explorerTree, setExplorerTree] = useState<TreeNode | null>(null);
   const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null);
   const [showAllFiles, setShowAllFiles] = useState(false);
+  const [showKeywordManager, setShowKeywordManager] = useState(false);
   const [stats, setStats] = useState<EditorStats>({
     wordCount: 0,
     charCount: 0,
@@ -37,6 +40,7 @@ function App() {
   });
 
   const { loadSession, triggerAutosave } = useTabSession(tabs, activeTabId, setTabs, setActiveTabId);
+  const { categories } = useKeywords();
 
   useEffect(() => {
     // Safety timeout to ensure app renders even if session loading hangs
@@ -302,6 +306,7 @@ function App() {
           <button onClick={createNewTab}>New</button>
           <button onClick={handleOpen}>Open</button>
           <button onClick={handleSave} disabled={!activeTab}>Save</button>
+          <button onClick={() => setShowKeywordManager(true)}>Keywords</button>
           <button onClick={() => {
             window.dispatchEvent(new KeyboardEvent('keydown', {
               key: 'f',
@@ -328,6 +333,7 @@ function App() {
               initialCursorPos={activeTab.cursorPos}
               initialScrollPos={activeTab.scrollPos}
               wordWrap={true}
+              categories={categories}
             />
           ) : (
             <div className="empty-state">
@@ -349,6 +355,9 @@ function App() {
           />
         )}
       </div>
+      {showKeywordManager && (
+        <KeywordManager onClose={() => setShowKeywordManager(false)} />
+      )}
     </div>
   );
 }
