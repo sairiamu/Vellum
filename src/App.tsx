@@ -18,6 +18,10 @@ import { JsonTreeView } from './editor/formatViews/JsonTreeView';
 import { CsvTableView } from './editor/formatViews/CsvTableView';
 import { MarkdownPreview } from './editor/formatViews/MarkdownPreview';
 
+import { CommandPalette, Command } from './commandPalette/CommandPalette';
+import { useTheme, ThemeType } from './theme/ThemeProvider';
+import { getRecentFiles, addRecentFile, RecentFile, togglePinRecentFile, removeRecentFile } from './lib/recentFiles';
+
 interface FileResponse {
   content: string;
   encoding: string;
@@ -35,6 +39,10 @@ function App() {
   const [currentFolderPath, setCurrentFolderPath] = useState<string | null>(null);
   const [showAllFiles, setShowAllFiles] = useState(false);
   const [showKeywordManager, setShowKeywordManager] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [wordWrap, setWordWrap] = useState(true);
+  const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
   const [stats, setStats] = useState<EditorStats>({
     wordCount: 0,
     charCount: 0,
@@ -44,6 +52,30 @@ function App() {
 
   const { loadSession, triggerAutosave } = useTabSession(tabs, activeTabId, setTabs, setActiveTabId);
   const { categories } = useKeywords();
+  const {
+    theme, setTheme,
+    fontSize, setFontSize,
+    fontFamily, setFontFamily
+  } = useTheme();
+
+  useEffect(() => {
+    getRecentFiles().then(setRecentFiles);
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setShowCommandPalette(prev => !prev);
+      }
+      if (e.key === 'F11') {
+        e.preventDefault();
+        setIsFocusMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     // Safety timeout to ensure app renders even if session loading hangs
@@ -146,6 +178,7 @@ function App() {
               setActiveTabId(newTab.id);
               setIsLargeFile(false);
               setLoadProgress(0);
+              addRecentFile(selected, name).then(setRecentFiles);
               const endTime = performance.now();
               console.log(`Large file opened in ${endTime - startTime}ms`);
             } else if (event.type === 'Error') {
@@ -166,6 +199,7 @@ function App() {
           };
           setTabs(prev => [...prev, newTab]);
           setActiveTabId(newTab.id);
+          addRecentFile(selected, name).then(setRecentFiles);
           const endTime = performance.now();
           console.log(`File opened in ${endTime - startTime}ms`);
         }
@@ -267,6 +301,7 @@ function App() {
       };
       setTabs(prev => [...prev, newTab]);
       setActiveTabId(newTab.id);
+      addRecentFile(path, name).then(setRecentFiles);
     } catch (error) {
       console.error('Failed to open file from tree:', error);
     }
@@ -278,6 +313,52 @@ function App() {
       setExplorerTree(tree);
     }
   }, [currentFolderPath, showAllFiles]);
+
+  const handlePinRecent = async (path: string) => {
+    const updated = await togglePinRecentFile(path);
+    setRecentFiles(updated);
+  };
+
+  const handleRemoveRecent = async (path: string) => {
+    const updated = await removeRecentFile(path);
+    setRecentFiles(updated);
+  };
+
+  const insertTimestamp = () => {
+    if (!activeTabId) return;
+    const timestamp = new Date().toLocaleString();
+    handleContentChange(activeTab?.content + "\n" + timestamp);
+  };
+
+  const commands: Command[] = [
+    { id: 'new-file', name: 'File: New', shortcut: 'Ctrl+N', action: createNewTab },
+    { id: 'open-file', name: 'File: Open', shortcut: 'Ctrl+O', action: handleOpen },
+    { id: 'save-file', name: 'File: Save', shortcut: 'Ctrl+S', action: handleSave },
+    { id: 'open-folder', name: 'File: Open Folder', action: handleOpenFolder },
+    { id: 'toggle-wrap', name: 'Editor: Toggle Word Wrap', action: () => setWordWrap(!wordWrap) },
+    { id: 'insert-ts', name: 'Editor: Insert Timestamp', action: insertTimestamp },
+    { id: 'focus-mode', name: 'View: Toggle Focus Mode', shortcut: 'F11', action: () => setIsFocusMode(!isFocusMode) },
+    { id: 'keywords', name: 'View: Keyword Manager', action: () => setShowKeywordManager(true) },
+    { id: 'find', name: 'Edit: Find', shortcut: 'Ctrl+F', action: () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'f',
+        ctrlKey: !navigator.platform.includes('Mac'),
+        metaKey: navigator.platform.includes('Mac'),
+        bubbles: true
+      }));
+    }},
+    { id: 'font-larger', name: 'Font: Increase Size', action: () => setFontSize(fontSize + 1) },
+    { id: 'font-smaller', name: 'Font: Decrease Size', action: () => setFontSize(Math.max(8, fontSize - 1)) },
+    { id: 'font-mono', name: 'Font: Switch to Monospace', action: () => setFontFamily("'Cascadia Code', monospace") },
+    { id: 'font-sans', name: 'Font: Switch to Proportional', action: () => setFontFamily("-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif") },
+    { id: 'enc-utf8', name: 'Encoding: UTF-8', action: () => handleEncodingChange('UTF-8') },
+    { id: 'enc-utf16le', name: 'Encoding: UTF-16LE', action: () => handleEncodingChange('UTF-16LE') },
+    { id: 'enc-windows1252', name: 'Encoding: Windows-1252 (ANSI)', action: () => handleEncodingChange('windows-1252') },
+    { id: 'theme-glass', name: 'Theme: Glass', action: () => setTheme('glass') },
+    { id: 'theme-clay', name: 'Theme: Clay', action: () => setTheme('clay') },
+    { id: 'theme-skeuo', name: 'Theme: Skeuomorphic', action: () => setTheme('skeuo') },
+    { id: 'theme-pure-glass', name: 'Theme: Pure Glass', action: () => setTheme('pure-glass') },
+  ];
 
   const handleToggleViewMode = () => {
     if (!activeTabId) return;
@@ -320,13 +401,16 @@ function App() {
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isFocusMode ? 'focus-mode' : ''}`}>
       <FileTree
         tree={explorerTree}
         onFileClick={handleFileClick}
         showAll={showAllFiles}
         onToggleShowAll={handleToggleShowAll}
         onOpenFolder={handleOpenFolder}
+        recentFiles={recentFiles}
+        onPinRecent={handlePinRecent}
+        onRemoveRecent={handleRemoveRecent}
       />
       <div className="main-view">
         {isLargeFile && (
@@ -374,7 +458,7 @@ function App() {
                 onStateChange={handleEditorStateChange}
                 initialCursorPos={activeTab.cursorPos}
                 initialScrollPos={activeTab.scrollPos}
-                wordWrap={true}
+                wordWrap={wordWrap}
                 categories={categories}
               />
             )
@@ -400,6 +484,9 @@ function App() {
       </div>
       {showKeywordManager && (
         <KeywordManager onClose={() => setShowKeywordManager(false)} />
+      )}
+      {showCommandPalette && (
+        <CommandPalette commands={commands} onClose={() => setShowCommandPalette(false)} />
       )}
     </div>
   );

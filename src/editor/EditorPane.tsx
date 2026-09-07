@@ -8,6 +8,7 @@ import { keywordHighlight, keywordCategoriesFacet } from './extensions/keywordHi
 import { KeywordCategory } from '../lib/types';
 
 const keywordCompartment = new Compartment();
+const wordWrapCompartment = new Compartment();
 
 export interface EditorStats {
   wordCount: number;
@@ -86,6 +87,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
         keywordCompartment.of(keywordCategoriesFacet.of(categories)),
         keywordHighlight(),
+        wordWrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChange(update.state.doc.toString());
@@ -140,6 +142,14 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
       });
     }
   }, [categories]);
+
+  useEffect(() => {
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: wordWrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : [])
+      });
+    }
+  }, [wordWrap]);
 
   return <div ref={editorRef} className="editor-pane" style={{ height: '100%', width: '100%' }} />;
 };

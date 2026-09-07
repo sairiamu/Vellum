@@ -251,6 +251,8 @@ body {
 .cm-editor {
   height: 100%;
   background: transparent !important;
+  font-family: var(--font-family) !important;
+  font-size: var(--font-size) !important;
 }
 
 .cm-gutters {
@@ -514,6 +516,152 @@ body {
   background: #fff0f0;
   border-color: #ffcccc;
   color: #850000;
+}
+
+/* Command Palette Styles */
+.command-palette-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  padding-top: 100px;
+  z-index: 3000;
+}
+
+.command-palette-modal {
+  width: 500px;
+  max-width: 90%;
+  max-height: 400px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.command-palette-input {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.command-palette-input input {
+  width: 100%;
+  border: none;
+  font-size: 16px;
+  outline: none;
+  color: #333;
+}
+
+.command-palette-results {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.command-item {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.command-item.selected {
+  background: #007acc;
+  color: white;
+}
+
+.command-item.selected .command-shortcut {
+  color: #eee;
+}
+
+.command-shortcut {
+  font-size: 11px;
+  color: #888;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.command-no-results {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+/* Focus Mode */
+.app-container.focus-mode .file-explorer,
+.app-container.focus-mode .toolbar,
+.app-container.focus-mode .tab-bar,
+.app-container.focus-mode .status-bar {
+  display: none;
+}
+
+.app-container.focus-mode .main-view {
+  width: 100%;
+  height: 100%;
+}
+
+.app-container.focus-mode .editor-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-top: 50px;
+}
+
+/* Recent Files Sidebar */
+.section-header {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #888;
+  letter-spacing: 0.5px;
+  background: rgba(0,0,0,0.02);
+}
+
+.recent-file-item {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.recent-file-item:hover {
+  background: #e0e0e0;
+}
+
+.recent-file-item .node-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-actions {
+  display: none;
+  gap: 4px;
+}
+
+.recent-file-item:hover .recent-actions {
+  display: flex;
+}
+
+.recent-actions button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0 2px;
+  color: #666;
 }
 
 /* Formatted Views Styles */

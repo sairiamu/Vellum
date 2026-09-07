@@ -20,6 +20,10 @@
   /* Accessibility Tokens */
   --contrast-floor: 4.5; /* WCAG AA standard */
 
+  /* Font Tokens */
+  --font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+  --font-size: 14px;
+
   /* Default Text Color - for context */
   --text-primary: #1a1a1a;
 }
