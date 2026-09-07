@@ -32,6 +32,7 @@ export interface Tab {
   encoding: string;
   lineEnding: string;
   isLargeMode?: boolean;
+  viewMode?: 'raw' | 'formatted';
 }
 
 export interface SessionState {

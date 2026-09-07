@@ -515,3 +515,147 @@ body {
   border-color: #ffcccc;
   color: #850000;
 }
+
+/* Formatted Views Styles */
+.formatted-view-container {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background: white;
+  color: #333;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* JSON Tree View */
+.json-tree-view {
+  font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.json-node {
+  margin-top: 2px;
+}
+
+.json-line {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.json-line:hover {
+  background: #f0f0f0;
+}
+
+.json-toggle {
+  display: inline-block;
+  width: 12px;
+  font-size: 10px;
+  color: #888;
+  transition: transform 0.2s;
+}
+
+.json-toggle.collapsed {
+  transform: rotate(0deg);
+}
+
+.json-label {
+  color: #881391;
+  font-weight: bold;
+}
+
+.json-string { color: #c41a16; }
+.json-number { color: #1c00cf; }
+.json-boolean { color: #aa0d91; }
+.json-null { color: #888; }
+.json-bracket { color: #333; }
+.json-placeholder {
+  background: #eee;
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: #666;
+}
+
+/* CSV Table View */
+.csv-table-view {
+  width: 100%;
+}
+
+.csv-table-view table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.csv-table-view th {
+  position: sticky;
+  top: 0;
+  background: #f5f5f5;
+  z-index: 10;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 2px solid #ddd;
+  border-right: 1px solid #eee;
+}
+
+.csv-table-view td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #eee;
+  border-right: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.csv-table-view tr:hover {
+  background: #f9f9f9;
+}
+
+/* Markdown Preview */
+.markdown-preview {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+  color: #333;
+}
+
+.markdown-preview h1, .markdown-preview h2 {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview code {
+  background: #f6f8fa;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.markdown-preview pre {
+  background: #f6f8fa;
+  padding: 16px;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.markdown-preview blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 16px;
+  color: #666;
+}
+
+.format-toggle-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.format-toggle-btn.active {
+  background: #007acc;
+  color: white;
+  border-color: #007acc;
+}

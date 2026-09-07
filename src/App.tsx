@@ -10,10 +10,13 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { useTabSession } from './tabs/useTabSession';
 
 import { FileTree } from './explorer/FileTree';
-
 import { useFileWatcher } from './explorer/useFileWatcher';
 import { KeywordManager } from './keywords/KeywordManager';
 import { useKeywords } from './keywords/useKeywords';
+
+import { JsonTreeView } from './editor/formatViews/JsonTreeView';
+import { CsvTableView } from './editor/formatViews/CsvTableView';
+import { MarkdownPreview } from './editor/formatViews/MarkdownPreview';
 
 interface FileResponse {
   content: string;
@@ -276,6 +279,36 @@ function App() {
     }
   }, [currentFolderPath, showAllFiles]);
 
+  const handleToggleViewMode = () => {
+    if (!activeTabId) return;
+    setTabs(prev => prev.map(t =>
+      t.id === activeTabId ? { ...t, viewMode: t.viewMode === 'formatted' ? 'raw' : 'formatted' } : t
+    ));
+  };
+
+  const getFormatType = (path?: string) => {
+    if (!path) return null;
+    const ext = path.split('.').pop()?.toLowerCase();
+    if (ext === 'json') return 'json';
+    if (ext === 'csv') return 'csv';
+    if (ext === 'md') return 'markdown';
+    return null;
+  };
+
+  const formatType = getFormatType(activeTab?.path);
+  const showFormatted = activeTab?.viewMode === 'formatted' && formatType;
+
+  const renderFormattedView = () => {
+    if (!activeTab) return null;
+    return (
+      <div className="formatted-view-container">
+        {formatType === 'json' && <JsonTreeView content={activeTab.content} />}
+        {formatType === 'csv' && <CsvTableView content={activeTab.content} />}
+        {formatType === 'markdown' && <MarkdownPreview content={activeTab.content} />}
+      </div>
+    );
+  };
+
   useFileWatcher(currentFolderPath, handleRefreshTree);
 
   if (!isLoaded) {
@@ -307,6 +340,14 @@ function App() {
           <button onClick={handleOpen}>Open</button>
           <button onClick={handleSave} disabled={!activeTab}>Save</button>
           <button onClick={() => setShowKeywordManager(true)}>Keywords</button>
+          {formatType && (
+            <button
+              className={`format-toggle-btn ${activeTab?.viewMode === 'formatted' ? 'active' : ''}`}
+              onClick={handleToggleViewMode}
+            >
+              {activeTab?.viewMode === 'formatted' ? 'Raw' : 'Formatted'}
+            </button>
+          )}
           <button onClick={() => {
             window.dispatchEvent(new KeyboardEvent('keydown', {
               key: 'f',
@@ -325,16 +366,18 @@ function App() {
         />
         <main className="editor-container">
           {activeTab ? (
-            <EditorPane
-              key={activeTab.id}
-              content={activeTab.content}
-              onChange={handleContentChange}
-              onStateChange={handleEditorStateChange}
-              initialCursorPos={activeTab.cursorPos}
-              initialScrollPos={activeTab.scrollPos}
-              wordWrap={true}
-              categories={categories}
-            />
+            showFormatted ? renderFormattedView() : (
+              <EditorPane
+                key={activeTab.id}
+                content={activeTab.content}
+                onChange={handleContentChange}
+                onStateChange={handleEditorStateChange}
+                initialCursorPos={activeTab.cursorPos}
+                initialScrollPos={activeTab.scrollPos}
+                wordWrap={true}
+                categories={categories}
+              />
+            )
           ) : (
             <div className="empty-state">
               <p>Vellum</p>
